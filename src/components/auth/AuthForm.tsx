@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
 import { useI18n } from "@/i18n/provider";
@@ -25,15 +25,19 @@ function toSafeNextPath(path: string | null): string {
 
 export default function AuthForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { t } = useI18n();
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState(t("auth.initialMessage"));
   const [loading, setLoading] = useState(false);
+  const [nextPath, setNextPath] = useState("/cage");
   const supabase = getSupabaseBrowserClient();
-  const nextPath = useMemo(() => toSafeNextPath(searchParams.get("next")), [searchParams]);
+
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    setNextPath(toSafeNextPath(searchParams.get("next")));
+  }, []);
 
   if (!isSupabaseConfigured()) {
     return (
