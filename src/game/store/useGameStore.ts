@@ -36,6 +36,9 @@ type GameStore = GameSnapshot & {
   buyFeed: (quantity?: number) => StoreActionResult;
   feedSelectedAnimal: () => StoreActionResult;
   moveAnimal: (animalId: string, placement: CagePlacement) => void;
+  renameAnimal: (animalId: string, nickname: string) => StoreActionResult;
+  setAnimalThumbnail: (animalId: string, dataUrl: string) => StoreActionResult;
+  setSelectedAnimalThumbnail: (dataUrl: string) => StoreActionResult;
 };
 
 const repo = createGameRepo();
@@ -70,6 +73,24 @@ async function persistSnapshot(snapshot: GameSnapshot): Promise<void> {
   } catch {
     // LocalStorage and Supabase can be unavailable in restricted environments.
   }
+}
+
+function normalizeNickname(nickname: string): string | undefined {
+  const normalized = nickname.trim().slice(0, 32);
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+function normalizeThumbnailDataUrl(dataUrl: string): string | undefined {
+  const normalized = dataUrl.trim();
+  if (!normalized) {
+    return undefined;
+  }
+
+  if (!normalized.startsWith("data:image/")) {
+    return undefined;
+  }
+
+  return normalized;
 }
 
 export const useGameStore = create<GameStore>((set, get) => {
@@ -263,6 +284,94 @@ export const useGameStore = create<GameStore>((set, get) => {
       });
 
       void persistSnapshot(nextState);
+    },
+    renameAnimal: (animalId, nickname) => {
+      const synced = syncCurrentSnapshot();
+      const targetIndex = synced.ownedAnimals.findIndex((animal) => animal.id === animalId);
+      if (targetIndex === -1) {
+        return {
+          ok: false,
+          message: translateReason("Selected animal not found."),
+        };
+      }
+
+      const nextNickname = normalizeNickname(nickname);
+      const nextAnimals = [...synced.ownedAnimals];
+      nextAnimals[targetIndex] = {
+        ...nextAnimals[targetIndex],
+        nickname: nextNickname,
+      };
+
+      const nextState: GameSnapshot = {
+        ...synced,
+        ownedAnimals: nextAnimals,
+      };
+
+      set({
+        ownedAnimals: nextAnimals,
+      });
+
+      void persistSnapshot(nextState);
+
+      return {
+        ok: true,
+        message: nextNickname
+          ? translateRuntime("game.action.renameUpdated")
+          : translateRuntime("game.action.renameCleared"),
+      };
+    },
+    setAnimalThumbnail: (animalId, dataUrl) => {
+      const synced = syncCurrentSnapshot();
+      const targetIndex = synced.ownedAnimals.findIndex((animal) => animal.id === animalId);
+      if (targetIndex === -1) {
+        return {
+          ok: false,
+          message: translateReason("Selected animal not found."),
+        };
+      }
+
+      const nextThumbnail = normalizeThumbnailDataUrl(dataUrl);
+      if (dataUrl.trim().length > 0 && !nextThumbnail) {
+        return {
+          ok: false,
+          message: translateRuntime("game.reason.invalidImageFormat"),
+        };
+      }
+
+      const nextAnimals = [...synced.ownedAnimals];
+      nextAnimals[targetIndex] = {
+        ...nextAnimals[targetIndex],
+        thumbnailDataUrl: nextThumbnail,
+      };
+
+      const nextState: GameSnapshot = {
+        ...synced,
+        ownedAnimals: nextAnimals,
+      };
+
+      set({
+        ownedAnimals: nextAnimals,
+      });
+
+      void persistSnapshot(nextState);
+
+      return {
+        ok: true,
+        message: nextThumbnail
+          ? translateRuntime("game.action.thumbnailUpdated")
+          : translateRuntime("game.action.thumbnailCleared"),
+      };
+    },
+    setSelectedAnimalThumbnail: (dataUrl) => {
+      const selectedAnimalId = get().selectedAnimalId;
+      if (!selectedAnimalId) {
+        return {
+          ok: false,
+          message: translateRuntime("game.reason.selectFirst"),
+        };
+      }
+
+      return get().setAnimalThumbnail(selectedAnimalId, dataUrl);
     },
   };
 });

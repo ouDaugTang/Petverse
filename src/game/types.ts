@@ -8,6 +8,8 @@ export type OwnedAnimal = {
   isDead: boolean;
   lastUpdatedAt: number;
   ageProgressMs: number;
+  nickname?: string;
+  thumbnailDataUrl?: string;
 };
 
 export type CagePlacement = {
@@ -33,6 +35,7 @@ export type AnimalCatalogItem = {
   price: number;
   modelPath: string;
   fallbackModelPaths?: string[];
+  thumbnailPath?: string;
   fallbackColor: string;
   modelYawOffset?: number;
 };
@@ -90,6 +93,13 @@ function normalizeOwnedAnimal(value: unknown, now: number): OwnedAnimal | null {
   const normalizedLastUpdatedAt = asFiniteInteger(candidate.lastUpdatedAt) ?? now;
   const normalizedAgeProgressMs = Math.max(0, asFiniteInteger(candidate.ageProgressMs) ?? 0);
   const normalizedIsDead = Boolean(candidate.isDead) || normalizedHunger <= 0;
+  const normalizedNickname =
+    typeof candidate.nickname === "string" ? candidate.nickname.trim().slice(0, 32) : undefined;
+  const normalizedThumbnailDataUrl =
+    typeof candidate.thumbnailDataUrl === "string" &&
+    candidate.thumbnailDataUrl.startsWith("data:image/")
+      ? candidate.thumbnailDataUrl
+      : undefined;
 
   return {
     id: candidate.id,
@@ -99,6 +109,8 @@ function normalizeOwnedAnimal(value: unknown, now: number): OwnedAnimal | null {
     isDead: normalizedIsDead,
     lastUpdatedAt: normalizedLastUpdatedAt,
     ageProgressMs: normalizedAgeProgressMs,
+    nickname: normalizedNickname || undefined,
+    thumbnailDataUrl: normalizedThumbnailDataUrl,
   };
 }
 
@@ -199,7 +211,9 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
       typeof animal.hunger !== "number" ||
       typeof animal.isDead !== "boolean" ||
       typeof animal.lastUpdatedAt !== "number" ||
-      typeof animal.ageProgressMs !== "number"
+      typeof animal.ageProgressMs !== "number" ||
+      (animal.nickname !== undefined && typeof animal.nickname !== "string") ||
+      (animal.thumbnailDataUrl !== undefined && typeof animal.thumbnailDataUrl !== "string")
     ) {
       return false;
     }

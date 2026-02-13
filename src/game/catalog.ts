@@ -13,6 +13,7 @@ export const ANIMAL_CATALOG: AnimalCatalogItem[] = [
     price: 35,
     modelPath: "/models/animals/guineaPig.glb",
     fallbackModelPaths: ["/models/animals/capybara.glb"],
+    thumbnailPath: "/images/animals/guineaPig.svg",
     fallbackColor: "#b08056",
     modelYawOffset: Math.PI,
   },
@@ -21,6 +22,7 @@ export const ANIMAL_CATALOG: AnimalCatalogItem[] = [
     name: "Fennec",
     price: 45,
     modelPath: "/models/animals/fennec.glb",
+    thumbnailPath: "/images/animals/fennec.svg",
     fallbackColor: "#e7c48d",
   },
   {
@@ -28,6 +30,7 @@ export const ANIMAL_CATALOG: AnimalCatalogItem[] = [
     name: "Otter",
     price: 55,
     modelPath: "/models/animals/otter.glb",
+    thumbnailPath: "/images/animals/otter.svg",
     fallbackColor: "#7d6a58",
   },
 ];

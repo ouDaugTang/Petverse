@@ -38,7 +38,9 @@ export default function CageView() {
         <div className="space-y-1">
           <div className="text-sm font-semibold text-stone-700">
             {t("cage.selected")}:{" "}
-            {selectedAnimal ? t(ANIMAL_NAME_KEYS[selectedAnimal.animalKey]) : t("common.none")}
+            {selectedAnimal
+              ? selectedAnimal.nickname?.trim() || t(ANIMAL_NAME_KEYS[selectedAnimal.animalKey])
+              : t("common.none")}
           </div>
           <div className="text-sm text-stone-600">
             {selectedAnimal
@@ -54,17 +56,46 @@ export default function CageView() {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="rounded-lg bg-stone-800 px-4 py-2 text-sm font-semibold text-stone-100 disabled:cursor-not-allowed disabled:bg-stone-400"
-          disabled={!selectedAnimal || selectedAnimal.isDead || feed <= 0}
-          onClick={() => {
-            const result = feedSelectedAnimal();
-            setFeedback(result.message);
-          }}
-        >
-          {t("cage.giveFeed")}
-        </button>
+        <div className="flex flex-wrap justify-end gap-2">
+          <button
+            type="button"
+            className="rounded-lg bg-stone-800 px-4 py-2 text-sm font-semibold text-stone-100 disabled:cursor-not-allowed disabled:bg-stone-400"
+            disabled={!selectedAnimal || selectedAnimal.isDead || feed <= 0}
+            onClick={() => {
+              const result = feedSelectedAnimal();
+              setFeedback(result.message);
+            }}
+          >
+            {t("cage.giveFeed")}
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-stone-400 bg-stone-100 px-4 py-2 text-sm font-semibold text-stone-700"
+            onClick={() => {
+              const canvas = document.querySelector<HTMLCanvasElement>("#cage-scene-canvas canvas");
+              if (!canvas) {
+                setFeedback(t("cage.screenshotCanvasMissing"));
+                return;
+              }
+
+              try {
+                const imageDataUrl = canvas.toDataURL("image/png");
+                const fileName = `petverse-cage-${new Date().toISOString().replace(/[:.]/g, "-")}.png`;
+                const link = document.createElement("a");
+                link.href = imageDataUrl;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                setFeedback(t("cage.screenshotDownloaded"));
+              } catch {
+                setFeedback(t("cage.screenshotFailed"));
+              }
+            }}
+          >
+            {t("cage.downloadScreenshot")}
+          </button>
+        </div>
       </div>
 
       <p className="rounded-lg border border-stone-300 bg-[#f8f4ea] px-4 py-3 text-sm text-stone-700">

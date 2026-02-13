@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Otter icon">
+  <rect width="96" height="96" rx="16" fill="#efe5d2"/>
+  <ellipse cx="48" cy="58" rx="26" ry="20" fill="#7c6754"/>
+  <ellipse cx="48" cy="72" rx="13" ry="8" fill="#b8a08a"/>
+  <circle cx="39" cy="56" r="3" fill="#2e241a"/>
+  <circle cx="57" cy="56" r="3" fill="#2e241a"/>
+  <ellipse cx="48" cy="65" rx="5" ry="3" fill="#d5c4b3"/>
+  <circle cx="30" cy="47" r="6" fill="#8b735f"/>
+  <circle cx="66" cy="47" r="6" fill="#8b735f"/>
+</svg>

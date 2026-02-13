@@ -12,7 +12,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Box3, MathUtils, Plane, Vector3, type Group } from "three";
+import { Box3, MathUtils, Plane, Vector3, type Group, type Mesh, type Object3D } from "three";
 
 import { ANIMAL_BY_KEY } from "@/game/catalog";
 import { CAGE_BOUNDS, clampPlacement, placementForIndex } from "@/game/logic";
@@ -71,16 +71,12 @@ class ModelFallbackBoundary extends Component<
   }
 }
 
-function FallbackAnimalMesh({ color, selected }: { color: string; selected: boolean }) {
+function FallbackAnimalMesh({ color }: { color: string }) {
   return (
     <group>
       <mesh castShadow receiveShadow position={[0, 0.45, 0]}>
         <sphereGeometry args={[0.45, 24, 24]} />
         <meshStandardMaterial color={color} roughness={0.45} />
-      </mesh>
-      <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.55, 0.65, 24]} />
-        <meshBasicMaterial color={selected ? "#ffde59" : "#8f8f8f"} />
       </mesh>
     </group>
   );
@@ -90,6 +86,12 @@ function LoadedAnimalModel({ path, modelYawOffset }: { path: string; modelYawOff
   const gltf = useGLTF(path) as { scene: Group };
   const normalized = useMemo(() => {
     const scene = gltf.scene.clone(true);
+    scene.traverse((node: Object3D) => {
+      if ("isMesh" in node && node.isMesh) {
+        node.castShadow = true;
+        node.receiveShadow = false;
+      }
+    });
     const box = new Box3().setFromObject(scene);
 
     if (box.isEmpty()) {
@@ -130,13 +132,11 @@ function AnimalModel({
   modelPath,
   fallbackModelPaths,
   fallbackColor,
-  selected,
   modelYawOffset,
 }: {
   modelPath: string;
   fallbackModelPaths?: string[];
   fallbackColor: string;
-  selected: boolean;
   modelYawOffset: number;
 }) {
   const [resolvedModelPath, setResolvedModelPath] = useState<string | null>(null);
@@ -180,7 +180,7 @@ function AnimalModel({
     };
   }, [candidateModelPaths]);
 
-  const fallback = <FallbackAnimalMesh color={fallbackColor} selected={selected} />;
+  const fallback = <FallbackAnimalMesh color={fallbackColor} />;
   if (!checkFinished || !resolvedModelPath) {
     return fallback;
   }
@@ -209,6 +209,12 @@ function AnimalActor({
   const dragOffsetRef = useRef(new Vector3());
   const dragPlaneRef = useRef(new Plane(new Vector3(0, 1, 0), 0));
   const dragIntersectionRef = useRef(new Vector3());
+  const modelGroupRef = useRef<Group>(null);
+  const selectionRingRef = useRef<Mesh>(null);
+  const boundsBoxRef = useRef(new Box3());
+  const boundsSizeRef = useRef(new Vector3());
+  const ringMeasureCooldownRef = useRef(0);
+  const [selectionRingRadius, setSelectionRingRadius] = useState(0.72);
   const movementTargetRef = useRef<{ x: number; z: number }>({ x: placement.x, z: placement.z });
   const idleTimerRef = useRef<number>(MathUtils.randFloat(0.8, 2.2));
 
@@ -230,6 +236,29 @@ function AnimalActor({
 
   useFrame((_, delta) => {
     const group = groupRef.current;
+    const selectionRing = selectionRingRef.current;
+    if (selectionRing) {
+      const pulse = 1 + Math.sin(performance.now() * 0.002) * 0.04;
+      selectionRing.scale.set(pulse, pulse, pulse);
+    }
+
+    ringMeasureCooldownRef.current -= delta;
+    if (ringMeasureCooldownRef.current <= 0) {
+      ringMeasureCooldownRef.current = 0.45;
+      const modelGroup = modelGroupRef.current;
+      if (modelGroup) {
+        const bounds = boundsBoxRef.current.setFromObject(modelGroup);
+        if (!bounds.isEmpty()) {
+          const size = bounds.getSize(boundsSizeRef.current);
+          const footprintRadius = Math.max(size.x, size.z) * 0.5;
+          const nextRadius = MathUtils.clamp(footprintRadius + 0.18, 0.58, 1.55);
+          setSelectionRingRadius((current) =>
+            Math.abs(current - nextRadius) > 0.03 ? nextRadius : current
+          );
+        }
+      }
+    }
+
     if (!group || isDraggingRef.current || animal.isDead) {
       return;
     }
@@ -304,7 +333,7 @@ function AnimalActor({
     return null;
   }
 
-  const animalName = t(ANIMAL_NAME_KEYS[animal.animalKey]);
+  const animalName = animal.nickname?.trim() || t(ANIMAL_NAME_KEYS[animal.animalKey]);
 
   return (
     <group
@@ -373,14 +402,21 @@ function AnimalActor({
         finishDrag();
       }}
     >
-      <AnimalModel
-        modelPath={animalDefinition.modelPath}
-        fallbackModelPaths={animalDefinition.fallbackModelPaths}
-        fallbackColor={animalDefinition.fallbackColor}
-        selected={selected}
-        modelYawOffset={animalDefinition.modelYawOffset ?? 0}
-      />
-      <Html center transform sprite position={[0, 1.12, 0]} style={{ pointerEvents: "none" }}>
+      <group ref={modelGroupRef}>
+        <AnimalModel
+          modelPath={animalDefinition.modelPath}
+          fallbackModelPaths={animalDefinition.fallbackModelPaths}
+          fallbackColor={animalDefinition.fallbackColor}
+          modelYawOffset={animalDefinition.modelYawOffset ?? 0}
+        />
+      </group>
+      {selected ? (
+        <mesh ref={selectionRingRef} position={[0, 0.03, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[selectionRingRadius - 0.1, selectionRingRadius + 0.08, 48]} />
+          <meshBasicMaterial color="#f6d365" transparent opacity={0.95} depthWrite={false} />
+        </mesh>
+      ) : null}
+      <Html center transform sprite position={[0, 1.84, 0]} style={{ pointerEvents: "none" }}>
         <div
           className={`inline-flex min-w-[132px] items-center justify-center gap-1.5 rounded-md border border-stone-100/20 bg-stone-900/85 px-2.5 py-1 text-[11px] font-semibold leading-none text-stone-100 shadow-lg transition-all duration-200 ease-out ${
             selected ? "translate-y-0 scale-100 opacity-100" : "translate-y-2 scale-95 opacity-0"
@@ -400,6 +436,83 @@ function AnimalActor({
 }
 
 function CageGeometry() {
+  const WALL_CENTER_Y = 1.205;
+  const frontWallRef = useRef<Mesh>(null);
+  const backWallRef = useRef<Mesh>(null);
+  const leftWallRef = useRef<Mesh>(null);
+  const rightWallRef = useRef<Mesh>(null);
+
+  useFrame(({ camera }, delta) => {
+    const absX = Math.abs(camera.position.x);
+    const absZ = Math.abs(camera.position.z);
+    const sum = Math.max(0.0001, absX + absZ);
+    const xRatio = absX / sum;
+    const zRatio = absZ / sum;
+    const primaryFadeOpacity = 0.025;
+    const secondaryFadeOpacity = 0.14;
+    const secondaryFadeThreshold = 0.28;
+
+    let frontTarget = 1;
+    let backTarget = 1;
+    let leftTarget = 1;
+    let rightTarget = 1;
+
+    const xPrimary = xRatio >= zRatio;
+    const zPrimary = zRatio >= xRatio;
+
+    if (camera.position.x >= 0) {
+      rightTarget = xPrimary
+        ? primaryFadeOpacity
+        : xRatio >= secondaryFadeThreshold
+          ? secondaryFadeOpacity
+          : 1;
+    } else {
+      leftTarget = xPrimary
+        ? primaryFadeOpacity
+        : xRatio >= secondaryFadeThreshold
+          ? secondaryFadeOpacity
+          : 1;
+    }
+
+    if (camera.position.z >= 0) {
+      frontTarget = zPrimary
+        ? primaryFadeOpacity
+        : zRatio >= secondaryFadeThreshold
+          ? secondaryFadeOpacity
+          : 1;
+    } else {
+      backTarget = zPrimary
+        ? primaryFadeOpacity
+        : zRatio >= secondaryFadeThreshold
+          ? secondaryFadeOpacity
+          : 1;
+    }
+
+    const applyOpacity = (meshRef: { current: Mesh | null }, targetOpacity: number) => {
+      const material = meshRef.current?.material;
+      if (!material || Array.isArray(material)) {
+        return;
+      }
+
+      const nextOpacity = MathUtils.damp(material.opacity, targetOpacity, 7, delta);
+      const shouldBeTransparent = nextOpacity < 0.995;
+      material.opacity = nextOpacity;
+      material.depthWrite = true;
+      material.polygonOffset = shouldBeTransparent;
+      material.polygonOffsetFactor = shouldBeTransparent ? -1 : 0;
+      material.polygonOffsetUnits = shouldBeTransparent ? -1 : 0;
+      if (material.transparent !== shouldBeTransparent) {
+        material.transparent = shouldBeTransparent;
+        material.needsUpdate = true;
+      }
+    };
+
+    applyOpacity(frontWallRef, frontTarget);
+    applyOpacity(backWallRef, backTarget);
+    applyOpacity(leftWallRef, leftTarget);
+    applyOpacity(rightWallRef, rightTarget);
+  });
+
   return (
     <group>
       <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
@@ -407,19 +520,19 @@ function CageGeometry() {
         <meshStandardMaterial color="#d8ccb4" roughness={0.9} />
       </mesh>
 
-      <mesh position={[0, 1.2, -4.8]} receiveShadow>
+      <mesh ref={backWallRef} position={[0, WALL_CENTER_Y, -4.8]} receiveShadow renderOrder={2}>
         <boxGeometry args={[9.5, 2.4, 0.15]} />
         <meshStandardMaterial color="#8f7650" />
       </mesh>
-      <mesh position={[0, 1.2, 4.8]} receiveShadow>
+      <mesh ref={frontWallRef} position={[0, WALL_CENTER_Y, 4.8]} receiveShadow renderOrder={2}>
         <boxGeometry args={[9.5, 2.4, 0.15]} />
         <meshStandardMaterial color="#8f7650" />
       </mesh>
-      <mesh position={[-4.8, 1.2, 0]} receiveShadow>
+      <mesh ref={leftWallRef} position={[-4.8, WALL_CENTER_Y, 0]} receiveShadow renderOrder={2}>
         <boxGeometry args={[0.15, 2.4, 9.5]} />
         <meshStandardMaterial color="#8f7650" />
       </mesh>
-      <mesh position={[4.8, 1.2, 0]} receiveShadow>
+      <mesh ref={rightWallRef} position={[4.8, WALL_CENTER_Y, 0]} receiveShadow renderOrder={2}>
         <boxGeometry args={[0.15, 2.4, 9.5]} />
         <meshStandardMaterial color="#8f7650" />
       </mesh>
@@ -436,9 +549,13 @@ export default function CageSceneCanvas() {
   const [draggingAnimalId, setDraggingAnimalId] = useState<string | null>(null);
 
   return (
-    <div className="h-[440px] w-full overflow-hidden rounded-xl border border-stone-300 bg-[#e5ddcb]">
+    <div
+      id="cage-scene-canvas"
+      className="h-[440px] w-full overflow-hidden rounded-xl border border-stone-300 bg-[#e5ddcb]"
+    >
       <Canvas
         camera={{ position: [0, 6.8, 9.8], fov: 45 }}
+        gl={{ preserveDrawingBuffer: true }}
         shadows
         onPointerMissed={() => {
           if (!draggingAnimalId) {
