@@ -1,15 +1,16 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useCallback } from "react";
 import { useEffect } from "react";
+import { useRef } from "react";
 import { useState } from "react";
 
-import FolderTreeNav from "@/components/game/FolderTreeNav";
-import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
-import { useGameStore } from "@/game/store/useGameStore";
-import { useI18n } from "@/i18n/provider";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
+import FolderTreeNav from "@/components/game/FolderTreeNav.client";
+import { LanguageSwitcher } from "@/components/i18n";
+import { signOutAction, useAuthSession } from "@/features/auth";
+import { useGameStore } from "@/game/store";
+import { useI18n } from "@/i18n";
 
 type GameShellProps = {
   children: React.ReactNode;
@@ -24,12 +25,19 @@ export default function GameShell({ children }: GameShellProps) {
   const coins = useGameStore((state) => state.coins);
   const feed = useGameStore((state) => state.inventory.feed);
   const ownedAnimals = useGameStore((state) => state.ownedAnimals.length);
-  const [userEmail, setUserEmail] = useState<string | null>(null);
-  const [authReady, setAuthReady] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const supabase = getSupabaseBrowserClient();
+  const didRunInitialInitializeRef = useRef(false);
+  const handleSessionChange = useCallback(() => {
+    if (!didRunInitialInitializeRef.current) {
+      return;
+    }
+
+    void initialize();
+  }, [initialize]);
+  const { client, userEmail, authReady, isConfigured } = useAuthSession(handleSessionChange);
 
   useEffect(() => {
+    didRunInitialInitializeRef.current = true;
     void initialize();
   }, [initialize]);
 
@@ -60,43 +68,6 @@ export default function GameShell({ children }: GameShellProps) {
       mediaQuery.removeEventListener("change", applySidebarMode);
     };
   }, []);
-
-  useEffect(() => {
-    let isMounted = true;
-    if (!supabase) {
-      setAuthReady(true);
-      return;
-    }
-    const client = supabase;
-
-    async function syncAuthUser() {
-      const {
-        data: { user },
-      } = await client.auth.getUser();
-      if (!isMounted) {
-        return;
-      }
-
-      setUserEmail(user?.email ?? null);
-      setAuthReady(true);
-      void initialize();
-    }
-
-    void syncAuthUser();
-
-    const {
-      data: { subscription },
-    } = client.auth.onAuthStateChange((_event, session) => {
-      setUserEmail(session?.user?.email ?? null);
-      setAuthReady(true);
-      void initialize();
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [initialize, supabase]);
 
   return (
     <div className="min-h-screen bg-[#e9e3d5] text-stone-800">
@@ -146,16 +117,16 @@ export default function GameShell({ children }: GameShellProps) {
             <span>
               {t("shell.animals")}: {ownedAnimals}
             </span>
-            {isSupabaseConfigured() ? (
+            {isConfigured ? (
               <>
                 <span className="max-w-48 truncate text-xs font-medium text-stone-500">
                   {authReady ? (userEmail ?? t("shell.noSession")) : t("shell.checkingAuth")}
                 </span>
-                {supabase ? (
+                {client ? (
                   <button
                     type="button"
                     onClick={async () => {
-                      await supabase.auth.signOut();
+                      await signOutAction(client);
                       router.replace("/auth");
                       router.refresh();
                     }}

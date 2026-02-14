@@ -1,6 +1,6 @@
 "use client";
 
-import { useI18n } from "@/i18n/provider";
+import { useI18n } from "@/i18n";
 
 export default function SettingsView() {
   const { t } = useI18n();

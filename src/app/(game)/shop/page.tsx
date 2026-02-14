@@ -1,4 +1,4 @@
-import ShopView from "@/components/game/ShopView";
+import { ShopView } from "@/components/game";
 
 export default function ShopPage() {
   return <ShopView />;

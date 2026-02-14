@@ -1,5 +1,5 @@
-import type { AnimalKey } from "@/game/types";
-import { ANIMAL_NAME_KEYS, FEED_NAME_KEY } from "@/i18n/gameText";
+import type { AnimalKey } from "@/game";
+import { ANIMAL_NAME_KEYS, FEED_NAME_KEY } from "@/i18n";
 import {
   DEFAULT_LANGUAGE,
   isLanguage,

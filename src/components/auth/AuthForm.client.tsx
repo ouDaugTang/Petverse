@@ -4,24 +4,17 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import LanguageSwitcher from "@/components/i18n/LanguageSwitcher";
-import { useI18n } from "@/i18n/provider";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
-import { isSupabaseConfigured } from "@/lib/supabase/config";
+import { LanguageSwitcher } from "@/components/i18n";
+import {
+  getAuthClientAction,
+  isAuthConfiguredAction,
+  signInWithPasswordAction,
+  signUpWithPasswordAction,
+  toSafeNextPath,
+} from "@/features/auth";
+import { useI18n } from "@/i18n";
 
 type AuthMode = "login" | "signup";
-
-function toSafeNextPath(path: string | null): string {
-  if (!path || !path.startsWith("/")) {
-    return "/cage";
-  }
-
-  if (path.startsWith("//")) {
-    return "/cage";
-  }
-
-  return path;
-}
 
 export default function AuthForm() {
   const router = useRouter();
@@ -32,14 +25,14 @@ export default function AuthForm() {
   const [message, setMessage] = useState(t("auth.initialMessage"));
   const [loading, setLoading] = useState(false);
   const [nextPath, setNextPath] = useState("/cage");
-  const supabase = getSupabaseBrowserClient();
+  const authClient = getAuthClientAction();
 
   useEffect(() => {
     const searchParams = new URLSearchParams(window.location.search);
     setNextPath(toSafeNextPath(searchParams.get("next")));
   }, []);
 
-  if (!isSupabaseConfigured()) {
+  if (!isAuthConfiguredAction()) {
     return (
       <section className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-stone-300 bg-[#f8f4ea] shadow-[0_20px_50px_rgba(53,41,31,0.15)]">
         <div className="flex items-center justify-between border-b border-stone-300 bg-[#dfd7c5] px-6 py-4">
@@ -61,7 +54,7 @@ export default function AuthForm() {
     );
   }
 
-  if (!supabase) {
+  if (!authClient) {
     return (
       <section className="mx-auto max-w-4xl overflow-hidden rounded-2xl border border-stone-300 bg-[#f8f4ea] shadow-[0_20px_50px_rgba(53,41,31,0.15)]">
         <div className="flex items-center justify-between border-b border-stone-300 bg-[#dfd7c5] px-6 py-4">
@@ -84,10 +77,7 @@ export default function AuthForm() {
 
     try {
       if (mode === "login") {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+        const { data, error } = await signInWithPasswordAction(authClient, email, password);
 
         if (error) {
           setMessage(error.message);
@@ -105,10 +95,7 @@ export default function AuthForm() {
         return;
       }
 
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
+      const { data, error } = await signUpWithPasswordAction(authClient, email, password);
 
       if (error) {
         setMessage(error.message);

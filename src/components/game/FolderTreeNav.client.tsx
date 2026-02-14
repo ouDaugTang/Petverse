@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { useI18n } from "@/i18n/provider";
+import { useI18n } from "@/i18n";
 
 type NavNode = {
   href: string;

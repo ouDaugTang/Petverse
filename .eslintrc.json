@@ -1,3 +1,54 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript", "prettier"]
+  "extends": ["next/core-web-vitals", "next/typescript", "prettier"],
+  "rules": {
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["@/*/*/*/*"],
+            "message": "Deep imports (4+ segments) are banned. Re-export via index.ts."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/components/ui/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              "@/game/store/*",
+              "@/store/*",
+              "@/features/*",
+              "@/game/repo/*",
+              "@/lib/repo/*",
+              "@/lib/supabase/*"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/**/three/**/*.{ts,tsx}"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              "@/game/store/*",
+              "@/store/*",
+              "@/features/*",
+              "@/game/repo/*",
+              "@/lib/repo/*",
+              "@/lib/supabase/*"
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

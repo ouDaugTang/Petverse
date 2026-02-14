@@ -1,4 +1,4 @@
-import type { AnimalKey } from "@/game/types";
+import type { AnimalKey } from "@/game";
 import type { MessageKey } from "@/i18n/messages";
 
 export const ANIMAL_NAME_KEYS: Record<AnimalKey, MessageKey> = {

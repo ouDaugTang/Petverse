@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
-import Counter from "@/components/Counter";
+import { Counter } from "@/components";
 
 describe("Counter", () => {
   it("renders with the initial count", () => {

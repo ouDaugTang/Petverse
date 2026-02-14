@@ -3,10 +3,9 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import CageSceneCanvas from "@/components/game/CageSceneCanvas";
-import { useGameStore } from "@/game/store/useGameStore";
-import { ANIMAL_NAME_KEYS, FEED_NAME_KEY } from "@/i18n/gameText";
-import { useI18n } from "@/i18n/provider";
+import CageSceneCanvas from "@/components/game/CageSceneCanvas.client";
+import { ANIMAL_NAME_KEYS, FEED_NAME_KEY, useI18n } from "@/i18n";
+import { useGameStore } from "@/game/store";
 
 export default function CageView() {
   const { t } = useI18n();

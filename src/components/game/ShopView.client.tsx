@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 
-import { ANIMAL_CATALOG, FEED_CATALOG } from "@/game/catalog";
-import { useGameStore } from "@/game/store/useGameStore";
-import { ANIMAL_NAME_KEYS, FEED_NAME_KEY } from "@/i18n/gameText";
-import { useI18n } from "@/i18n/provider";
+import { ANIMAL_CATALOG, FEED_CATALOG, useGameStore } from "@/game";
+import { ANIMAL_NAME_KEYS, FEED_NAME_KEY, useI18n } from "@/i18n";
 
 export default function ShopView() {
   const { t } = useI18n();

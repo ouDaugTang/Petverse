@@ -1,4 +1,4 @@
-import SettingsView from "@/components/game/SettingsView";
+import { SettingsView } from "@/components/game";
 
 export default function SettingsPage() {
   return <SettingsView />;
