@@ -24,7 +24,7 @@ export const useGameStore = create<GameStore>((set, get) => {
       selectedAnimalId: nextSelectedAnimalId,
     });
 
-    void persistSnapshot(repo, synced);
+    void persistSnapshot(repo, synced, nextSelectedAnimalId);
     return synced;
   };
 
@@ -40,13 +40,17 @@ export const useGameStore = create<GameStore>((set, get) => {
       try {
         const loaded = await repo.loadState();
         if (loaded) {
-          const synced = advanceGameTime(loaded);
+          const synced = advanceGameTime(loaded.snapshot);
+          const nextSelectedAnimalId = reconcileSelectedAnimalId(
+            synced.ownedAnimals,
+            loaded.selectedAnimalId
+          );
           set({
             ...synced,
-            selectedAnimalId: reconcileSelectedAnimalId(synced.ownedAnimals, null),
+            selectedAnimalId: nextSelectedAnimalId,
             hydrated: true,
           });
-          void persistSnapshot(repo, synced);
+          void persistSnapshot(repo, synced, nextSelectedAnimalId);
           return;
         }
       } catch {

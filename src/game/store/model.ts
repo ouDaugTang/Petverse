@@ -1,4 +1,5 @@
 import type { GameSnapshot } from "@/game/types";
+import { normalizeThumbnailRef } from "@/game/model/thumbnailRef";
 
 type UpdateAnimalResult =
   | {
@@ -17,16 +18,7 @@ export function normalizeNickname(nickname: string): string | undefined {
 }
 
 export function normalizeThumbnailDataUrl(dataUrl: string): string | undefined {
-  const normalized = dataUrl.trim();
-  if (!normalized) {
-    return undefined;
-  }
-
-  if (!normalized.startsWith("data:image/")) {
-    return undefined;
-  }
-
-  return normalized;
+  return normalizeThumbnailRef(dataUrl);
 }
 
 export function updateAnimalNickname(

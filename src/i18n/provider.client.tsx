@@ -9,7 +9,7 @@ import {
   messages,
   type Language,
   type MessageKey,
-} from "@/i18n/messages";
+} from "@/i18n/messages/index";
 import { formatMessage } from "@/i18n/translate";
 
 export type TranslateFn = (

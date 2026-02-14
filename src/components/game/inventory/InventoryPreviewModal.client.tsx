@@ -43,7 +43,7 @@ export default function InventoryPreviewModal({ preview, onClose, t }: Inventory
             alt={t("inventory.thumbnailPreviewAlt", { name: preview.name })}
             width={1024}
             height={1024}
-            unoptimized={preview.src.startsWith("data:")}
+            unoptimized
             className="h-auto max-h-[70vh] w-full object-contain"
           />
         </div>

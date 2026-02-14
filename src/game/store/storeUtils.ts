@@ -30,9 +30,16 @@ export function reconcileSelectedAnimalId(
   return findAnimal(ownedAnimals, selectedAnimalId)?.id ?? ownedAnimals[0]?.id ?? null;
 }
 
-export async function persistSnapshot(repo: GameRepo, snapshot: GameSnapshot): Promise<void> {
+export async function persistSnapshot(
+  repo: GameRepo,
+  snapshot: GameSnapshot,
+  selectedAnimalId: string | null
+): Promise<void> {
   try {
-    await repo.saveState(snapshot);
+    await repo.saveState({
+      snapshot,
+      selectedAnimalId,
+    });
   } catch {
     // LocalStorage and Supabase can be unavailable in restricted environments.
   }

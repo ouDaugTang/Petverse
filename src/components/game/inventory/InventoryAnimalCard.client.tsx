@@ -58,7 +58,7 @@ export default function InventoryAnimalCard({
             alt={t("inventory.thumbnailAlt", { name: displayName })}
             width={68}
             height={68}
-            unoptimized={previewSrc.startsWith("data:")}
+            unoptimized
             className="h-[68px] w-[68px] rounded-md object-cover"
           />
         </button>

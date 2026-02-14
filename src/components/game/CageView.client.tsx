@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import CageSceneCanvas from "@/components/game/CageSceneCanvas.client";
-import { ANIMAL_NAME_KEYS, FEED_NAME_KEY, useI18n } from "@/i18n";
+import { ANIMAL_NAME_KEYS, FEED_NAME_KEY, getAnimalVariantNameKey, useI18n } from "@/i18n";
 import { useGameStore } from "@/game/store";
 
 export default function CageView() {
@@ -38,7 +38,10 @@ export default function CageView() {
           <div className="text-sm font-semibold text-stone-700">
             {t("cage.selected")}:{" "}
             {selectedAnimal
-              ? selectedAnimal.nickname?.trim() || t(ANIMAL_NAME_KEYS[selectedAnimal.animalKey])
+              ? selectedAnimal.nickname?.trim() ||
+                `${t(ANIMAL_NAME_KEYS[selectedAnimal.animalKey])} · ${t(
+                  getAnimalVariantNameKey(selectedAnimal.animalKey, selectedAnimal.variantKey)
+                )}`
               : t("common.none")}
           </div>
           <div className="text-sm text-stone-600">

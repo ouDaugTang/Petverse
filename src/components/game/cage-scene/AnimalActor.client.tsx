@@ -7,12 +7,12 @@ import { Box3, MathUtils, Plane, Vector3, type Group, type Mesh } from "three";
 import AnimalNameTag from "./AnimalNameTag.client";
 import AnimalModel from "./AnimalModel.client";
 import {
-  ANIMAL_BY_KEY,
   clampPlacement,
+  getAnimalVariant,
   type CagePlacement,
   type OwnedAnimal,
 } from "@/game";
-import { ANIMAL_NAME_KEYS, useI18n } from "@/i18n";
+import { ANIMAL_NAME_KEYS, getAnimalVariantNameKey, useI18n } from "@/i18n";
 import { randomWanderPoint } from "./wander";
 
 type AnimalActorProps = {
@@ -33,7 +33,7 @@ export default function AnimalActor({
   onPlacementCommit,
 }: AnimalActorProps) {
   const { t } = useI18n();
-  const animalDefinition = ANIMAL_BY_KEY[animal.animalKey];
+  const animalVariant = getAnimalVariant(animal.animalKey, animal.variantKey);
   const groupRef = useRef<Group>(null);
   const isDraggingRef = useRef(false);
   const dragOffsetRef = useRef(new Vector3());
@@ -156,11 +156,11 @@ export default function AnimalActor({
     pickNextWanderTarget();
   }, [animal.id, onDragStateChange, onPlacementCommit, pickNextWanderTarget]);
 
-  if (!animalDefinition) {
-    return null;
-  }
-
-  const animalName = animal.nickname?.trim() || t(ANIMAL_NAME_KEYS[animal.animalKey]);
+  const animalName =
+    animal.nickname?.trim() ||
+    `${t(ANIMAL_NAME_KEYS[animal.animalKey])} · ${t(
+      getAnimalVariantNameKey(animal.animalKey, animal.variantKey)
+    )}`;
 
   return (
     <group
@@ -232,10 +232,10 @@ export default function AnimalActor({
     >
       <group ref={modelGroupRef}>
         <AnimalModel
-          modelPath={animalDefinition.modelPath}
-          fallbackModelPaths={animalDefinition.fallbackModelPaths}
-          fallbackColor={animalDefinition.fallbackColor}
-          modelYawOffset={animalDefinition.modelYawOffset ?? 0}
+          modelPath={animalVariant.modelPath}
+          fallbackModelPaths={animalVariant.fallbackModelPaths}
+          fallbackColor={animalVariant.fallbackColor}
+          modelYawOffset={animalVariant.modelYawOffset ?? 0}
         />
       </group>
       {selected ? (

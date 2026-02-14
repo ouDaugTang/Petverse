@@ -1,6 +1,11 @@
 import type { GameSnapshot } from "@/game/types";
 
+export type PersistedGameState = {
+  snapshot: GameSnapshot;
+  selectedAnimalId: string | null;
+};
+
 export interface GameRepo {
-  loadState: () => Promise<GameSnapshot | null>;
-  saveState: (state: GameSnapshot) => Promise<void>;
+  loadState: () => Promise<PersistedGameState | null>;
+  saveState: (state: PersistedGameState) => Promise<void>;
 }

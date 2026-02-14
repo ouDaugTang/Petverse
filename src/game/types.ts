@@ -1,8 +1,12 @@
+import { normalizeThumbnailRef } from "@/game/model/thumbnailRef";
+
 export type AnimalKey = "guineaPig" | "fennec" | "otter";
+export type AnimalVariantKey = string;
 
 export type OwnedAnimal = {
   id: string;
   animalKey: AnimalKey;
+  variantKey: AnimalVariantKey;
   age: number;
   hunger: number;
   isDead: boolean;
@@ -33,6 +37,12 @@ export type AnimalCatalogItem = {
   key: AnimalKey;
   name: string;
   price: number;
+  variants: AnimalVariantCatalogItem[];
+};
+
+export type AnimalVariantCatalogItem = {
+  key: AnimalVariantKey;
+  name: string;
   modelPath: string;
   fallbackModelPaths?: string[];
   thumbnailPath?: string;
@@ -77,6 +87,7 @@ function normalizeOwnedAnimal(value: unknown, now: number): OwnedAnimal | null {
 
   const candidate = value as Partial<OwnedAnimal> & {
     animalKey?: unknown;
+    variantKey?: unknown;
     level?: unknown;
     xp?: unknown;
   };
@@ -93,17 +104,21 @@ function normalizeOwnedAnimal(value: unknown, now: number): OwnedAnimal | null {
   const normalizedLastUpdatedAt = asFiniteInteger(candidate.lastUpdatedAt) ?? now;
   const normalizedAgeProgressMs = Math.max(0, asFiniteInteger(candidate.ageProgressMs) ?? 0);
   const normalizedIsDead = Boolean(candidate.isDead) || normalizedHunger <= 0;
+  const normalizedVariantKey =
+    typeof candidate.variantKey === "string" && candidate.variantKey.trim().length > 0
+      ? candidate.variantKey.trim()
+      : "default";
   const normalizedNickname =
     typeof candidate.nickname === "string" ? candidate.nickname.trim().slice(0, 32) : undefined;
   const normalizedThumbnailDataUrl =
-    typeof candidate.thumbnailDataUrl === "string" &&
-    candidate.thumbnailDataUrl.startsWith("data:image/")
-      ? candidate.thumbnailDataUrl
+    typeof candidate.thumbnailDataUrl === "string"
+      ? normalizeThumbnailRef(candidate.thumbnailDataUrl)
       : undefined;
 
   return {
     id: candidate.id,
     animalKey: normalizedAnimalKey,
+    variantKey: normalizedVariantKey,
     age: normalizedAge,
     hunger: normalizedIsDead ? 0 : normalizedHunger,
     isDead: normalizedIsDead,
@@ -207,6 +222,7 @@ export function isGameSnapshot(value: unknown): value is GameSnapshot {
     if (
       typeof animal.id !== "string" ||
       !isAnimalKey(animal.animalKey) ||
+      typeof animal.variantKey !== "string" ||
       typeof animal.age !== "number" ||
       typeof animal.hunger !== "number" ||
       typeof animal.isDead !== "boolean" ||

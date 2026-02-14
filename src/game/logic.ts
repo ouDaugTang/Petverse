@@ -2,10 +2,17 @@ import {
   ANIMAL_BY_KEY,
   DAY_IN_MS,
   FEED_CATALOG,
+  getAnimalVariant,
   HUNGER_DECAY_PER_DAY,
   HUNGER_MAX,
 } from "@/game/catalog";
-import type { AnimalKey, CagePlacement, GameSnapshot, OwnedAnimal } from "@/game/types";
+import type {
+  AnimalKey,
+  AnimalVariantKey,
+  CagePlacement,
+  GameSnapshot,
+  OwnedAnimal,
+} from "@/game/types";
 
 type ActionFailure = {
   ok: false;
@@ -24,6 +31,7 @@ export type ActionResult<TMeta = undefined> = ActionFailure | ActionSuccess<TMet
 type PurchaseAnimalOptions = {
   idFactory?: () => string;
   now?: number;
+  variantKey?: AnimalVariantKey;
 };
 
 export const CAGE_BOUNDS = {
@@ -145,6 +153,7 @@ export function purchaseAnimal(
   if (!animalDefinition) {
     return failure(state, "Unknown animal.");
   }
+  const animalVariant = getAnimalVariant(animalKey, options?.variantKey);
 
   if (state.coins < animalDefinition.price) {
     return failure(state, "Not enough coins.");
@@ -155,6 +164,7 @@ export function purchaseAnimal(
   const nextAnimal: OwnedAnimal = {
     id: animalId,
     animalKey,
+    variantKey: animalVariant.key,
     age: 0,
     hunger: HUNGER_MAX,
     isDead: false,
@@ -206,7 +216,7 @@ export function purchaseFeed(state: GameSnapshot, quantity = 1): ActionResult {
 export function sellAnimal(
   state: GameSnapshot,
   animalId: string
-): ActionResult<{ animalId: string; animalKey: AnimalKey; refundCoins: number }> {
+): ActionResult<{ animalId: string; animalKey: AnimalKey; variantKey: AnimalVariantKey; refundCoins: number }> {
   const target = state.ownedAnimals.find((animal) => animal.id === animalId);
   if (!target) {
     return failure(state, "Selected animal not found.");
@@ -233,6 +243,7 @@ export function sellAnimal(
     meta: {
       animalId,
       animalKey: target.animalKey,
+      variantKey: target.variantKey,
       refundCoins,
     },
   };

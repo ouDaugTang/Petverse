@@ -1,4 +1,4 @@
-import type { AnimalKey, CagePlacement, GameSnapshot } from "@/game";
+import type { AnimalKey, AnimalVariantKey, CagePlacement, GameSnapshot } from "@/game";
 
 export type StoreActionResult = {
   ok: boolean;
@@ -11,7 +11,7 @@ export type GameStore = GameSnapshot & {
   initialize: () => Promise<void>;
   syncWorldTime: () => void;
   selectAnimal: (animalId: string | null) => void;
-  buyAnimal: (animalKey: AnimalKey) => StoreActionResult;
+  buyAnimal: (animalKey: AnimalKey, variantKey?: AnimalVariantKey) => StoreActionResult;
   sellAnimal: (animalId: string) => StoreActionResult;
   buyFeed: (quantity?: number) => StoreActionResult;
   feedSelectedAnimal: () => StoreActionResult;

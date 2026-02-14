@@ -6,7 +6,11 @@ describe("game logic", () => {
   it("purchasing an animal deducts coins and initializes age/hunger state", () => {
     const now = 1_700_000_000_000;
     const initial = createDefaultGameSnapshot();
-    const result = purchaseAnimal(initial, "guineaPig", { idFactory: () => "animal-1", now });
+    const result = purchaseAnimal(initial, "guineaPig", {
+      idFactory: () => "animal-1",
+      now,
+      variantKey: "cream",
+    });
 
     expect(result.ok).toBe(true);
     if (!result.ok) {
@@ -18,6 +22,7 @@ describe("game logic", () => {
     expect(result.state.ownedAnimals[0]).toMatchObject({
       id: "animal-1",
       animalKey: "guineaPig",
+      variantKey: "cream",
       age: 0,
       hunger: HUNGER_MAX,
       isDead: false,
@@ -54,6 +59,7 @@ describe("game logic", () => {
     }
 
     expect(fed.state.inventory.feed).toBe(1);
+    expect(fed.state.ownedAnimals[0].variantKey).toBe("default");
     expect(fed.state.ownedAnimals[0].hunger).toBeGreaterThan(beforeFeed);
     expect(fed.state.ownedAnimals[0].hunger).toBeLessThanOrEqual(HUNGER_MAX);
   });

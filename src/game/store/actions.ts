@@ -5,12 +5,18 @@ import {
   purchaseFeed,
   sellAnimal as sellAnimalFromSnapshot,
   type AnimalKey,
+  type AnimalVariantKey,
   type CagePlacement,
   type GameSnapshot,
 } from "@/game";
 import type { GameRepo } from "@/game/repo/gameRepo";
 import { updateAnimalNickname, updateAnimalThumbnail } from "@/game/store/model";
-import { findAnimal, persistSnapshot, reconcileSelectedAnimalId } from "@/game/store/storeUtils";
+import {
+  findAnimal,
+  persistSnapshot,
+  reconcileSelectedAnimalId,
+  toSnapshot,
+} from "@/game/store/storeUtils";
 import type { GameStore, GetGameState, SetGameState } from "@/game/store/types";
 import {
   translateAnimalNameRuntime,
@@ -30,13 +36,16 @@ export function createStoreActions({ get, set, repo, syncCurrentSnapshot }: Stor
   return {
     selectAnimal: (animalId: string | null) => {
       const selectedAnimal = findAnimal(get().ownedAnimals, animalId);
+      const nextSelectedAnimalId = selectedAnimal?.id ?? null;
       set({
-        selectedAnimalId: selectedAnimal?.id ?? null,
+        selectedAnimalId: nextSelectedAnimalId,
       });
+
+      void persistSnapshot(repo, toSnapshot(get()), nextSelectedAnimalId);
     },
-    buyAnimal: (animalKey: AnimalKey) => {
+    buyAnimal: (animalKey: AnimalKey, variantKey?: AnimalVariantKey) => {
       const synced = syncCurrentSnapshot();
-      const result = purchaseAnimal(synced, animalKey);
+      const result = purchaseAnimal(synced, animalKey, { variantKey });
 
       if (!result.ok) {
         return {
@@ -50,12 +59,12 @@ export function createStoreActions({ get, set, repo, syncCurrentSnapshot }: Stor
         selectedAnimalId: result.meta.animalId,
       });
 
-      void persistSnapshot(repo, result.state);
+      void persistSnapshot(repo, result.state, result.meta.animalId);
 
       return {
         ok: true,
         message: translateRuntime("game.action.buyAnimal", {
-          animal: translateAnimalNameRuntime(animalKey),
+          animal: translateAnimalNameRuntime(animalKey, variantKey),
         }),
       };
     },
@@ -81,12 +90,12 @@ export function createStoreActions({ get, set, repo, syncCurrentSnapshot }: Stor
         selectedAnimalId: nextSelectedAnimalId,
       });
 
-      void persistSnapshot(repo, result.state);
+      void persistSnapshot(repo, result.state, nextSelectedAnimalId);
 
       return {
         ok: true,
         message: translateRuntime("game.action.sellAnimal", {
-          animal: translateAnimalNameRuntime(result.meta.animalKey),
+          animal: translateAnimalNameRuntime(result.meta.animalKey, result.meta.variantKey),
           coins: result.meta.refundCoins,
         }),
       };
@@ -106,7 +115,7 @@ export function createStoreActions({ get, set, repo, syncCurrentSnapshot }: Stor
         ...result.state,
       });
 
-      void persistSnapshot(repo, result.state);
+      void persistSnapshot(repo, result.state, get().selectedAnimalId);
 
       return {
         ok: true,
@@ -139,7 +148,7 @@ export function createStoreActions({ get, set, repo, syncCurrentSnapshot }: Stor
         ...result.state,
       });
 
-      void persistSnapshot(repo, result.state);
+      void persistSnapshot(repo, result.state, selectedAnimalId);
 
       return {
         ok: true,
@@ -169,7 +178,7 @@ export function createStoreActions({ get, set, repo, syncCurrentSnapshot }: Stor
         placements: nextState.placements,
       });
 
-      void persistSnapshot(repo, nextState);
+      void persistSnapshot(repo, nextState, get().selectedAnimalId);
     },
     renameAnimal: (animalId: string, nickname: string) => {
       const synced = syncCurrentSnapshot();
@@ -185,7 +194,7 @@ export function createStoreActions({ get, set, repo, syncCurrentSnapshot }: Stor
         ownedAnimals: result.state.ownedAnimals,
       });
 
-      void persistSnapshot(repo, result.state);
+      void persistSnapshot(repo, result.state, get().selectedAnimalId);
 
       return {
         ok: true,
@@ -214,7 +223,7 @@ export function createStoreActions({ get, set, repo, syncCurrentSnapshot }: Stor
         ownedAnimals: result.state.ownedAnimals,
       });
 
-      void persistSnapshot(repo, result.state);
+      void persistSnapshot(repo, result.state, get().selectedAnimalId);
 
       return {
         ok: true,

@@ -1,5 +1,5 @@
-import type { AnimalKey } from "@/game";
-import { ANIMAL_NAME_KEYS, FEED_NAME_KEY } from "@/i18n";
+﻿import type { AnimalKey, AnimalVariantKey } from "@/game";
+import { ANIMAL_NAME_KEYS, FEED_NAME_KEY, getAnimalVariantNameKey } from "@/i18n";
 import {
   DEFAULT_LANGUAGE,
   isLanguage,
@@ -7,7 +7,7 @@ import {
   messages,
   type Language,
   type MessageKey,
-} from "@/i18n/messages";
+} from "@/i18n/messages/index";
 import { formatMessage } from "@/i18n/translate";
 
 const REASON_TO_MESSAGE_KEY: Record<string, MessageKey> = {
@@ -50,10 +50,20 @@ export function translateReason(reason: string): string {
   return translateRuntime(mappedKey);
 }
 
-export function translateAnimalNameRuntime(animalKey: AnimalKey): string {
-  return translateRuntime(ANIMAL_NAME_KEYS[animalKey]);
+export function translateAnimalNameRuntime(
+  animalKey: AnimalKey,
+  variantKey?: AnimalVariantKey
+): string {
+  const speciesName = translateRuntime(ANIMAL_NAME_KEYS[animalKey]);
+  if (!variantKey) {
+    return speciesName;
+  }
+
+  const variantName = translateRuntime(getAnimalVariantNameKey(animalKey, variantKey));
+  return `${speciesName} - ${variantName}`;
 }
 
 export function translateFeedNameRuntime(): string {
   return translateRuntime(FEED_NAME_KEY);
 }
+

@@ -72,35 +72,20 @@ Behavior:
 - Logged-in users sync state by `auth.user.id` in `public.game_states`.
 - Otherwise, it uses LocalStorage persistence.
 
-### Auth + Save Table Setup (SQL)
+### DB Schema Setup (SQL)
 
-Run this in Supabase SQL Editor:
+Use the migration SQL in:
 
-```sql
-create table if not exists public.game_states (
-  player_id uuid primary key references auth.users(id) on delete cascade,
-  state jsonb not null,
-  updated_at timestamptz not null default now()
-);
-
-alter table public.game_states enable row level security;
-
-create policy "read own game state"
-on public.game_states
-for select
-to authenticated
-using (auth.uid() = player_id);
-
-create policy "insert own game state"
-on public.game_states
-for insert
-to authenticated
-with check (auth.uid() = player_id);
-
-create policy "update own game state"
-on public.game_states
-for update
-to authenticated
-using (auth.uid() = player_id)
-with check (auth.uid() = player_id);
+```text
+supabase/migrations/20260214_000001_petverse_core_schema.sql
 ```
+
+Run it in Supabase SQL Editor (or via Supabase CLI migrations).
+
+What it creates:
+
+- User-scoped core tables: `profiles`, `game_accounts`, `animal_instances`, `inventory_items`
+- Cage/extensibility tables: `cages`, `cage_animal_placements`, `cage_decor_placements`
+- Backward-compatible snapshot table: `game_states` (used by current app repo)
+- RLS policies for all tables
+- `animal-thumbnails` storage bucket + CRUD policies scoped by `auth.uid()`
